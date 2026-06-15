@@ -4,11 +4,14 @@ import StatusPanel from '@/components/StatusPanel.vue'
 import ActionButtons from '@/components/ActionButtons.vue'
 import EventLog from '@/components/EventLog.vue'
 import GameOverModal from '@/components/GameOverModal.vue'
+import MerchantModal from '@/components/MerchantModal.vue'
 import { useGame } from '@/composables/useGame'
 
-const { state, highScore, canPerformAction, gatherWood, gatherStone, hunt, drink, restart } = useGame()
+const { state, highScore, activeChoiceEvent, canPerformAction, canAffordOption, gatherWood, gatherStone, hunt, drink, resolveChoice, restart } = useGame()
 
 const isNewRecord = computed(() => state.value.turn >= highScore.value && state.value.turn > 0)
+
+const showMerchantModal = computed(() => !!activeChoiceEvent.value && activeChoiceEvent.value.event.id === 'merchant_visit')
 </script>
 
 <template>
@@ -78,6 +81,13 @@ const isNewRecord = computed(() => state.value.turn >= highScore.value && state.
       :high-score="highScore"
       :is-new-record="isNewRecord"
       @restart="restart"
+    />
+
+    <MerchantModal
+      :show="showMerchantModal"
+      :event="activeChoiceEvent?.event || null"
+      :can-afford-option="canAffordOption"
+      @choose="resolveChoice"
     />
   </div>
 </template>

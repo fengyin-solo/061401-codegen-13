@@ -1,5 +1,5 @@
 import { ref, computed, watch } from 'vue'
-import type { GameState, LogEntry, RandomEvent, ActionType, ActionEffect } from '@/types/game'
+import type { GameState, LogEntry, RandomEvent, ActionType, ActionEffect, ActiveChoiceEvent, EventOption } from '@/types/game'
 import { randomEvents } from '@/data/events'
 
 const STORAGE_KEY_HIGH_SCORE = 'survival_game_high_score'
@@ -36,9 +36,10 @@ export function useGame() {
   })
 
   const highScore = ref<number>(0)
+  const activeChoiceEvent = ref<ActiveChoiceEvent | null>(null)
   let logIdCounter = 0
 
-  const canAct = computed(() => !state.value.isGameOver)
+  const canAct = computed(() => !state.value.isGameOver && !activeChoiceEvent.value)
 
   function loadHighScore() {
     try {
@@ -96,9 +97,40 @@ export function useGame() {
     }
   }
 
-  function getRandomEvent(): RandomEvent {
-    const index = Math.floor(Math.random() * randomEvents.length)
-    return randomEvents[index]
+  function getNormalEvents(): RandomEvent[] {
+    return randomEvents.filter(e => !e.isChoice)
+  }
+
+  function getChoiceEvents(): RandomEvent[] {
+    return randomEvents.filter(e => e.isChoice)
+  }
+
+  function getRandomNormalEvent(): RandomEvent {
+    const normalEvents = getNormalEvents()
+    const index = Math.floor(Math.random() * normalEvents.length)
+    return normalEvents[index]
+  }
+
+  function canAffordOption(option: EventOption): boolean {
+    const effects = option.effects
+    if (effects.wood !== undefined && state.value.wood + effects.wood < 0) {
+      return false
+    }
+    if (effects.stone !== undefined && state.value.stone + effects.stone < 0) {
+      return false
+    }
+    return true
+  }
+
+  function rollChoiceEvent(): RandomEvent | null {
+    const choiceChance = 0.18
+    if (Math.random() > choiceChance) return null
+
+    const choiceEvents = getChoiceEvents()
+    if (choiceEvents.length === 0) return null
+
+    const index = Math.floor(Math.random() * choiceEvents.length)
+    return choiceEvents[index]
   }
 
   function checkGameOver() {
@@ -130,11 +162,43 @@ export function useGame() {
 
     addLog(`第 ${state.value.turn} 回合：${actionNames[action]}`, 'action')
 
-    const event = getRandomEvent()
+    const choiceEvent = rollChoiceEvent()
+    if (choiceEvent && choiceEvent.options) {
+      activeChoiceEvent.value = {
+        event: choiceEvent,
+        turn: state.value.turn,
+      }
+      addLog(choiceEvent.text, 'event')
+      return
+    }
+
+    const event = getRandomNormalEvent()
     applyEffects(event.effects)
 
     const eventLogType = event.type === 'good' ? 'good' : event.type === 'bad' ? 'bad' : 'event'
     addLog(event.text, eventLogType)
+
+    checkGameOver()
+  }
+
+  function resolveChoice(optionId: string) {
+    if (!activeChoiceEvent.value) return
+
+    const event = activeChoiceEvent.value.event
+    const option = event.options?.find(o => o.id === optionId)
+    if (!option) return
+
+    if (!canAffordOption(option)) return
+
+    applyEffects(option.effects)
+
+    if (optionId === 'decline') {
+      addLog(`你婉拒了商人的交易提议。`, 'event')
+    } else {
+      addLog(`你选择了「${option.label}」交易。`, 'good')
+    }
+
+    activeChoiceEvent.value = null
 
     checkGameOver()
   }
@@ -166,6 +230,7 @@ export function useGame() {
       isGameOver: false,
       logs: [],
     }
+    activeChoiceEvent.value = null
     logIdCounter = 0
     addLog('你醒来发现自己身处荒野中，需要想办法生存下去...', 'system')
   }
@@ -177,11 +242,14 @@ export function useGame() {
     state,
     highScore,
     canAct,
+    activeChoiceEvent,
     canPerformAction,
+    canAffordOption,
     gatherWood,
     gatherStone,
     hunt,
     drink,
+    resolveChoice,
     restart,
   }
 }

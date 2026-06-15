@@ -16,6 +16,14 @@ export interface LogEntry {
   turn: number
 }
 
+export interface EventOption {
+  id: string
+  label: string
+  description: string
+  effects: ActionEffect
+  disabled?: boolean
+}
+
 export interface RandomEvent {
   id: string
   text: string
@@ -27,6 +35,13 @@ export interface RandomEvent {
     wood?: number
     stone?: number
   }
+  isChoice?: boolean
+  options?: EventOption[]
+}
+
+export interface ActiveChoiceEvent {
+  event: RandomEvent
+  turn: number
 }
 
 export type ActionType = 'gatherWood' | 'gatherStone' | 'hunt' | 'drink'

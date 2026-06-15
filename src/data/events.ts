@@ -91,4 +91,49 @@ export const randomEvents: RandomEvent[] = [
     type: 'good',
     effects: { stone: 6, wood: 4 },
   },
+  {
+    id: 'merchant_visit',
+    text: '一位神秘的旅行商人出现在你面前，他愿意与你进行交易。',
+    type: 'neutral',
+    effects: {},
+    isChoice: true,
+    options: [
+      {
+        id: 'trade_wood_for_food',
+        label: '木材换食物',
+        description: '用 10 木材 换取 减少 30 饥饿值',
+        effects: { wood: -10, hunger: -30 },
+      },
+      {
+        id: 'trade_stone_for_food',
+        label: '石头换食物',
+        description: '用 8 石头 换取 减少 25 饥饿值',
+        effects: { stone: -8, hunger: -25 },
+      },
+      {
+        id: 'trade_wood_for_health',
+        label: '木材换药品',
+        description: '用 15 木材 换取 恢复 20 生命值',
+        effects: { wood: -15, health: 20 },
+      },
+      {
+        id: 'trade_stone_for_wood',
+        label: '石头换木材',
+        description: '用 10 石头 换取 18 木材',
+        effects: { stone: -10, wood: 18 },
+      },
+      {
+        id: 'trade_wood_for_stone',
+        label: '木材换石头',
+        description: '用 15 木材 换取 10 石头',
+        effects: { wood: -15, stone: 10 },
+      },
+      {
+        id: 'decline',
+        label: '不交易',
+        description: '婉拒商人的提议',
+        effects: {},
+      },
+    ],
+  },
 ]
